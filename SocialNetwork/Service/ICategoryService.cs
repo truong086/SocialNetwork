@@ -3,12 +3,12 @@ using SocialNetwork.ViewModel;
 
 namespace SocialNetwork.Service
 {
-    public interface IPostService
+    public interface ICategoryService
     {
-        Task<PayLoad<PostDTO>> Add(PostDTO postDTO);
         Task<PayLoad<object>> FindAll(string? name, int page = 1, int pageSize = 20);
-        Task<PayLoad<PostDTO>> Update (int id,  PostDTO postDTO);
-        Task<PayLoad<object>> DeleteById(int id);
+        Task<PayLoad<CategoryDTO>> Add(CategoryDTO data);
+        Task<PayLoad<CategoryDTO>> Update(int id, CategoryDTO data);
+        Task<PayLoad<string>> Delete(int id);
         Task<PayLoad<object>> GetById(int id);
     }
 }

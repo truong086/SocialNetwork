@@ -95,3 +95,4 @@ C:\Users\ASUS\source\repos\SocialNetwork\SocialNetwork\obj\Debug\net6.0\refint\S
 C:\Users\ASUS\source\repos\SocialNetwork\SocialNetwork\obj\Debug\net6.0\SocialNetwork.pdb
 C:\Users\ASUS\source\repos\SocialNetwork\SocialNetwork\obj\Debug\net6.0\SocialNetwork.genruntimeconfig.cache
 C:\Users\ASUS\source\repos\SocialNetwork\SocialNetwork\obj\Debug\net6.0\ref\SocialNetwork.dll
+C:\Users\ASUS\source\repos\SocialNetwork\SocialNetwork\obj\Debug\net6.0\SocialNetwork.sourcelink.json

@@ -112,6 +112,12 @@ namespace SocialNetwork.Models
                 .WithOne(o => o.commentRep)
                 .HasForeignKey(f => f.comentRep2)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<image_user>()
+                .HasMany(m => m.post_Images)
+                .WithOne(o => o.image_users)
+                .HasForeignKey(f => f.image_user_id)
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
     }
