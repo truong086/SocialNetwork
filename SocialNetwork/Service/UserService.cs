@@ -36,8 +36,12 @@ namespace SocialNetwork.Service
                 if (checkName != null)
                     return await Task.FromResult(PayLoad<UserDTO>.CreatedFail(Status.DATATONTAI));
 
-                
+
                 var roleData = checkRole(userDTO.role_id);
+                if(roleData == null)
+                {
+                    roleData = _context.roles.FirstOrDefault(x => x.name.ToLower() == "User".ToLower() && !x.deleted);
+                }
                 var mapData = _mapper.Map<User>(userDTO);
                 mapData.password = EncryptionHelper.CreatePasswordHash(mapData.password, _jwt.Key);
                 
@@ -125,7 +129,7 @@ namespace SocialNetwork.Service
                     email = checkData.email,
                     fullname = checkData.fullname,
                     image = checkData.image,
-                    role = checkData.roles.name,
+                    role = checkData.roles == null ? "Chưa có role" : checkData.roles.name,
                     token = genToken(claims)
                 }));
             }catch(Exception ex)
@@ -155,14 +159,14 @@ namespace SocialNetwork.Service
             throw new NotImplementedException();
         }
 
-        public async Task<PayLoad<string>> uploadImageUser(ImageUserUpload data)
+        public async Task<PayLoad<object>> uploadImageUser(ImageUserUpload data)
         {
             try
             {
                 var user = _userNameLoginService.name();
                 var checkAccount = _context.users.FirstOrDefault(x => x.id == Convert.ToInt32(user) && !x.deleted);
                 if(checkAccount == null)
-                    return await Task.FromResult(PayLoad<string>.CreatedFail(Status.DATANULL));
+                    return await Task.FromResult(PayLoad<object>.CreatedFail(Status.DATANULL));
 
                 if (data.file != null && data.file.Any() && data.file.Count() > 0)
                 {
@@ -183,11 +187,14 @@ namespace SocialNetwork.Service
                     await _context.SaveChangesAsync();
                 }
 
-                return await Task.FromResult(PayLoad<string>.Successfully("Upload Success"));
+                return await Task.FromResult(PayLoad<object>.Successfully(new
+                {
+                    data = data
+                }));
             }
             catch (Exception ex)
             {
-                return await Task.FromResult(PayLoad<string>.CreatedFail(ex.Message));
+                return await Task.FromResult(PayLoad<object>.CreatedFail(ex.Message));
             }
         }
 
@@ -195,11 +202,21 @@ namespace SocialNetwork.Service
         {
             try
             {
-                var data = _context.image_Users.ToList();
+                var user = _userNameLoginService.name();
+
+                var data = _context.image_Users.Where(x => x.user_id == int.Parse(user) && !x.deleted).ToList();
+                var checkTotalLike = _context.likes.Where(x => x.user_id == Convert.ToInt32(user) && !x.deleted && x.isLiked == true).Count();
+                var checkComment = _context.comments.Where(x => x.user_id == Convert.ToInt32(user) && !x.deleted).Count();
+                var checkImageTotal = _context.image_Users.Where(x => x.user_id == int.Parse(user) && !x.deleted).Count();
+                var checkPostTotal = _context.posts.Where(x => x.user_id == int.Parse(user) && !x.deleted).Count();
 
                 return await Task.FromResult(PayLoad<object>.Successfully(new
                 {
-                    data = data
+                    data = data,
+                    like = checkTotalLike,
+                    comment = checkComment,
+                    imageTotal = checkImageTotal,
+                    postTotal = checkPostTotal
                 }));
             }catch (Exception ex)
             {

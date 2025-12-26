@@ -27,7 +27,7 @@ namespace SocialNetwork.Controllers
 
         [HttpPost]
         [Route(nameof(uploadImageUser))]
-        public async Task<PayLoad<string>> uploadImageUser([FromForm]ImageUserUpload data)
+        public async Task<PayLoad<object>> uploadImageUser([FromForm]ImageUserUpload data)
         {
             return await _user.uploadImageUser(data);
         }

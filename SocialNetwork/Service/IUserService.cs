@@ -10,7 +10,7 @@ namespace SocialNetwork.Service
         Task<PayLoad<object>> Login(LoginDTO loginDTO);
         Task<PayLoad<UserDTO>> Update(int id, UserDTO data);
         Task<PayLoad<string>> Delete (int id);
-        Task<PayLoad<string>> uploadImageUser (ImageUserUpload data);
+        Task<PayLoad<object>> uploadImageUser (ImageUserUpload data);
         Task<PayLoad<object>> FindAlluploadImageUser ();
     }
 }
