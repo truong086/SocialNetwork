@@ -16,5 +16,15 @@
         public bool? isUserLike { get; set; }
         public DateTimeOffset? time { get; set; }
         public List<string>? images { get; set; }
+        public List<commentItem>? comments { get; set; } 
+    }
+
+    public class commentItem
+    {
+        public int id { get; set; }
+        public int id_post { get; set; }
+        public string? user{ get; set; }
+        public string? text { get; set; }
+        public string? image_user { get; set; }
     }
 }

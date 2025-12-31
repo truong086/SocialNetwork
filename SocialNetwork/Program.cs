@@ -123,6 +123,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserNameLoginService, UserNameLoginService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ICommentService, CommentService>();
 
 var connection = builder.Configuration.GetConnectionString("MyDB");
 builder.Services.AddDbContext<DBContext>(option =>

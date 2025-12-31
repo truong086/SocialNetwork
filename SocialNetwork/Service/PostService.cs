@@ -5,6 +5,7 @@ using SocialNetwork.Clouds;
 using SocialNetwork.Common;
 using SocialNetwork.Models;
 using SocialNetwork.ViewModel;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace SocialNetwork.Service
 {
@@ -205,7 +206,19 @@ namespace SocialNetwork.Service
 
                         // ✅ tối ưu check like
                         isUserLike = x.likes.Any(l => l.user_id == userId && l.isLiked == true && !x.deleted)
-                    }).OrderByDescending(x => x.time);
+                    }).OrderBy(x => x.isUserLike) // Sắp xếp theo bài viết chưa like lên trước
+                    .ThenByDescending(x => x.time); // Thời gian mới nhất lên trên
+                    /*
+                        .OrderByDescending(x => x.isUserLike) // Ưu tiên bài đã like lên trước
+                        .ThenByDescending(x => x.time); // Thời gian mới nhất lên trên
+
+                        Lưu ý: 
+                            - Sắp xếp nhiều trường: OrderBy → ThenBy
+                            - Ưu tiên true: OrderByDescending
+                            - Ưu tiên false: OrderBy
+                            - Thời gian mới nhất: ThenByDescending(x => x.time)
+                     */
+
 
                 if (!string.IsNullOrEmpty(name))
                     data = data.Where(x => x.title.Contains(name) || x.name.Contains(name) || x.category_name.Contains(name)).OrderByDescending(x => x.time);
@@ -213,10 +226,36 @@ namespace SocialNetwork.Service
                 if (category != null && category != 0 && category.HasValue)
                     data = data.Where(x => x.category_id == category).OrderByDescending(x => x.time);
 
-                data.ToList(); // Làm tất cả mọi thứ xong mới được để "ToList()" vào, vì để quá sớm sẽ làm chậm
+                //data.ToList(); // Làm tất cả mọi thứ xong mới được để "ToList()" vào, vì để quá sớm sẽ làm chậm
 
-                var pageList = new PageList<object>(data, page - 1, pageSize);
+                var posts = data
+                    .ToList();   // ✅ PHẢI CÓ
 
+
+                var postIds = posts.Select(p => p.id).ToList();
+
+                var commentsData = _context.comments.AsNoTracking().Where(x => postIds.Contains(x.post_id))
+                    .Select(x => new commentItem
+                    {
+                        id = x.id,
+                        user = x.user.fullname,
+                        id_post = x.post_id.Value,
+                        image_user = x.user.image,
+                        text = x.comment
+                    }).ToList();
+
+                var commentDict = commentsData
+                    .GroupBy(x => x.id_post)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                foreach (var post in posts)
+                {
+                        post.comments = commentDict.TryGetValue(post.id.Value, out var list)
+                                ? list
+                                : new List<commentItem>();
+                }
+
+                var pageList = new PageList<object>(posts, page - 1, pageSize);
                 return await Task.FromResult(PayLoad<object>.Successfully(new
                 {
                     data = pageList,
@@ -263,7 +302,18 @@ namespace SocialNetwork.Service
                     totalComment = x.totalComment,
                     likes = x.totalLine,
                     isUserLike = x.likes.Any(xl => xl.user_id == int.Parse(user) && !x.deleted && xl.isLiked == true)
-                }).OrderByDescending(x => x.time);
+                }).OrderBy(x => x.isUserLike) // Sắp xếp theo bài viết chưa like lên trước
+                    .ThenByDescending(x => x.time); // Thời gian mới nhất lên trên
+                /*
+                    .OrderByDescending(x => x.isUserLike) // Ưu tiên bài đã like lên trước
+                    .ThenByDescending(x => x.time); // Thời gian mới nhất lên trên
+
+                    Lưu ý: 
+                        - Sắp xếp nhiều trường: OrderBy → ThenBy
+                        - Ưu tiên true: OrderByDescending
+                        - Ưu tiên false: OrderBy
+                        - Thời gian mới nhất: ThenByDescending(x => x.time)
+                 */
 
                 if (!string.IsNullOrEmpty(name))
                     data = data.Where(x => x.title.Contains(name) || x.name.Contains(name) || x.category_name.Contains(name)).OrderByDescending(x => x.time);
@@ -271,8 +321,32 @@ namespace SocialNetwork.Service
                 if (category != null && category != 0)
                     data = data.Where(x => x.category_id == category).OrderByDescending(x => x.time);
 
-                data.ToList(); // Làm tất cả mọi thứ xong mới được để "ToList()" vào, vì để quá sớm sẽ làm chậm
-                var pageList = new PageList<object>(data, page - 1, pageSize);
+                //data.ToList(); // Làm tất cả mọi thứ xong mới được để "ToList()" vào, vì để quá sớm sẽ làm chậm
+                var posts = data.ToList();
+
+                var postIds = posts.Select(x => x.id).ToList();
+
+                var commentData = _context.comments.AsNoTracking().Where(x => postIds.Contains(x.post_id) && !x.deleted)
+                    .Select(x => new commentItem
+                    {
+                        id = x.id,
+                        id_post = x.post_id.Value,
+                        image_user = x.user.image,
+                        user = x.user.fullname,
+                        text = x.comment
+                    }).ToList();
+
+                // GroupBy trong RAM rất nhanh vì Không DB, Không JOIN, O(n)
+                var commentDict = commentData.GroupBy(x => x.id_post).ToDictionary(g => g.Key, g => g.ToList());
+
+                foreach(var post in posts)
+                {
+                    // Gán comment vào từng post 
+                    // Sửa dụng TryGetValue để tìm kiếm id của post nhanh hơn .Where() trong loop, không tạo list thừa
+                    post.comments = commentDict.TryGetValue(post.id.Value, out var list) ? list : new List<commentItem>();
+                }
+
+                var pageList = new PageList<object>(posts, page - 1, pageSize);
 
                 return await Task.FromResult(PayLoad<object>.Successfully(new
                 {

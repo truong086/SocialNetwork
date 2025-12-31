@@ -173,7 +173,7 @@ namespace SocialNetwork.Service
                     var listImage = new List<image_user>();
                     foreach(var item in data.file)
                     {
-                        uploadCloud.CloudInaryIFromAccount(item, Status.IMAGEUSER + "_" + checkAccount.username, _cloud);
+                        uploadCloud.CloudInaryIFromAccount(item, Status.IMAGEUSER + "_" + checkAccount.fullname, _cloud);
                         listImage.Add(new image_user
                         {
                             image = uploadCloud.Link,
