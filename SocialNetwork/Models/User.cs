@@ -11,6 +11,7 @@ namespace SocialNetwork.Models
         public string? phone { get; set; }
         public string? image { get; set; }  
         public string? publicid { get; set; }  
+        public string? quocgia { get; set; }  
         public int? role_id { get; set; }  
         public role? roles { get; set; }
         public int? tick_id { get; set; }

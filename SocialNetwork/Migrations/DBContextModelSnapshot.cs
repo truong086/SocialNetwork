@@ -427,6 +427,9 @@ namespace SocialNetwork.Migrations
                     b.Property<string>("publicid")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("quocgia")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("role_id")
                         .HasColumnType("int");
 

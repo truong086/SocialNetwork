@@ -130,6 +130,8 @@ namespace SocialNetwork.Service
                     fullname = checkData.fullname,
                     image = checkData.image,
                     role = checkData.roles == null ? "Chưa có role" : checkData.roles.name,
+                    quocgia = checkData.quocgia,
+                    phone = checkData.phone,
                     token = genToken(claims)
                 }));
             }catch(Exception ex)
