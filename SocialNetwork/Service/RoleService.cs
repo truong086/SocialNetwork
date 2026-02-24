@@ -37,14 +37,20 @@ namespace SocialNetwork.Service
             throw new NotImplementedException();
         }
 
-        public async Task<PayLoad<object>> FindAll(string? name, int page = 10, int pageSize = 20)
+        public async Task<PayLoad<object>> FindAll(string? name, int page = 1, int pageSize = 20)
         {
             try
             {
-                var data = _context.roles.Where(x => !x.deleted).ToList();
+                var query = _context.roles.Where(x => !x.deleted).AsQueryable();
                 
                 if(!string.IsNullOrEmpty(name))
-                    data = data.Where(x => x.name.Contains(name) && !x.deleted).ToList();
+                    query = query.Where(x => x.name.Contains(name));
+
+                var data = query.Select(x => new
+                {
+                    x.id,
+                    x.name
+                }).ToList();
 
                 var pageList = new PageList<object>(data, page - 1, pageSize);
 

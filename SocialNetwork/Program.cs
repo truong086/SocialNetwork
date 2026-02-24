@@ -24,7 +24,6 @@ builder.Services.AddSwaggerGen();
 var corsBuilder = new CorsPolicyBuilder();
 corsBuilder.AllowAnyHeader();
 corsBuilder.AllowAnyMethod();
-corsBuilder.AllowAnyOrigin();
 corsBuilder.WithOrigins("http://localhost:8080"); // Đây là Url bên frontEnd
 //corsBuilder.WithOrigins("*"); // Đây là Url bên frontEnd
 corsBuilder.AllowCredentials();
@@ -111,11 +110,7 @@ builder.Services.AddSingleton(cloudinary);
 builder.Services.Configure<Cloud>(builder.Configuration.GetSection("Cloud"));
 builder.Services.Configure<Jwt>(builder.Configuration.GetSection("Jwt"));
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-builder.Services.AddSwaggerGen();
-builder.Services.AddAuthentication(); // Sử dụng phân quyền
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-builder.Services.AddControllers();
-builder.Services.AddAuthentication(); // nếu có
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IRoleService, RoleService>();
@@ -128,16 +123,13 @@ builder.Services.AddScoped<ICommentService, CommentService>();
 var connection = builder.Configuration.GetConnectionString("MyDB");
 builder.Services.AddDbContext<DBContext>(option =>
 {
-    option.UseSqlServer(connection); // "ThuongMaiDienTu" đây là tên của project, vì tách riêng model khỏi project sang 1 lớp khác nên phải để câu lệnh này "b => b.MigrationsAssembly("ThuongMaiDienTu")"
+    option.UseSqlServer(connection);
 });
 
 // Đăng ký IHttpContextAccessor
 builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddMvc();
-builder.Services.AddControllersWithViews();
 builder.Services.AddDistributedMemoryCache();
-builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 builder.Services.AddResponseCompression();
 var app = builder.Build();

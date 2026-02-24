@@ -54,5 +54,34 @@ namespace SocialNetwork.Controllers
         {
             return await _user.Login(data);
         }
+
+        [AllowAnonymous]
+        [HttpPost]
+        [Route(nameof(ForgotPassword))]
+        public async Task<PayLoad<object>> ForgotPassword(ForgotPasswordDTO data)
+        {
+            return await _user.ForgotPassword(data);
+        }
+
+        [HttpPut]
+        [Route(nameof(UpdateProfile))]
+        public async Task<PayLoad<object>> UpdateProfile([FromForm] UpdateProfileDTO data)
+        {
+            return await _user.UpdateProfile(data);
+        }
+
+        [HttpGet]   
+        [Route(nameof(GetProfile))]
+        public async Task<PayLoad<object>> GetProfile()
+        {   
+            return await _user.GetProfile();
+        }
+
+        [HttpDelete]
+        [Route(nameof(DeleteImageUser))]
+        public async Task<PayLoad<object>> DeleteImageUser(int imageId)
+        {
+            return await _user.DeleteImageUser(imageId);
+        }
     }
 }

@@ -12,5 +12,9 @@ namespace SocialNetwork.Service
         Task<PayLoad<string>> Delete (int id);
         Task<PayLoad<object>> uploadImageUser (ImageUserUpload data);
         Task<PayLoad<object>> FindAlluploadImageUser ();
+        Task<PayLoad<object>> ForgotPassword(ForgotPasswordDTO data);
+        Task<PayLoad<object>> UpdateProfile(UpdateProfileDTO data);
+        Task<PayLoad<object>> GetProfile();
+        Task<PayLoad<object>> DeleteImageUser(int imageId);
     }
 }

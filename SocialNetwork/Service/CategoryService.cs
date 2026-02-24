@@ -51,18 +51,18 @@ namespace SocialNetwork.Service
         {
             try
             {
-                var data = _context.categories.Where(x => !x.deleted).
-                    Select(x => new
-                    {
-                        x.id,
-                        x.name,
-                        x.description,
-                        x.deleted,
-                        x.user.username
-                    }).ToList();
+                var query = _context.categories.Where(x => !x.deleted).AsQueryable();
 
                 if (!string.IsNullOrEmpty(name))
-                    data = data.Where(x => x.name.Contains(name) && !x.deleted).ToList();
+                    query = query.Where(x => x.name.Contains(name));
+
+                var data = query.Select(x => new
+                {
+                    x.id,
+                    x.name,
+                    x.description,
+                    username = x.user.username
+                }).ToList();
 
                 var pageList = new PageList<object>(data, page - 1, pageSize);
 

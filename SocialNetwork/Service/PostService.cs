@@ -46,7 +46,7 @@ namespace SocialNetwork.Service
 
                 if(postDTO.images != null && postDTO.images.Count > 0)
                 {
-                    var dataNew = _context.posts.OrderByDescending(x => x.cretoredat).FirstOrDefault();
+                    var dataNew = mapData; // EF đã gán id sau SaveChangesAsync
                     if(dataNew != null)
                     {
                         // Nếu như dữ liệu trong List là 1 object thì ép sang object đó, ở đây đang là ép sang object "user"
@@ -64,6 +64,8 @@ namespace SocialNetwork.Service
                             {
                                 var checkDataImage = dataImages.FirstOrDefault(x => x.id == item.id);
                                 if (checkDataImage != null)
+                                {
+                                    checkDataImage.isUsed = true;
                                     listImage.Add(new Post_Image
                                     {
                                         image = item.image,
@@ -75,6 +77,7 @@ namespace SocialNetwork.Service
                                         user = checkAccount,
                                         user_id = checkAccount.id
                                     });
+                                }
                             }
                             
                         }
@@ -108,25 +111,26 @@ namespace SocialNetwork.Service
                 if(checkCategory == null || checkUser == null)
                     return await Task.FromResult(PayLoad<PostEditImageDTO>.CreatedFail(Status.DATANULL));
 
-                uploadCloud.CloudInaryIFromAccount(postDTO.images, Status.IMAGEUSER + "_" + checkUser.username, _cloud);
-                _context.image_Users.Add(new image_user
+                var cloudResult = uploadCloud.CloudInaryIFromAccount(postDTO.images, Status.IMAGEUSER + "_" + checkUser.username, _cloud);
+                var newImageUser = new image_user
                 {
-                    image = uploadCloud.Link,
-                    public_id = uploadCloud.publicId,
+                    image = cloudResult.Link,
+                    public_id = cloudResult.PublicId,
                     user = checkUser,
-                    user_id = checkUser.id
-                });
+                    user_id = checkUser.id,
+                    isUsed = true
+                };
+                _context.image_Users.Add(newImageUser);
 
                 if(_context.SaveChanges() > 0)
                 {
-                    var dataNewImageUser = _context.image_Users.OrderByDescending(x => x.id).FirstOrDefault();
                     var listImage = new List<imageCloud>()
                     {
                         new imageCloud
                         {
-                            id = dataNewImageUser.id, 
-                            image = dataNewImageUser.image,
-                            publicId = dataNewImageUser.public_id
+                            id = newImageUser.id, 
+                            image = newImageUser.image,
+                            publicId = newImageUser.public_id
                         }
                     };
                     
@@ -158,11 +162,11 @@ namespace SocialNetwork.Service
                 if (data == null)
                     return await Task.FromResult(PayLoad<object>.CreatedFail(Status.DATANULL));
 
-                uploadCloud.CloudInaryIFromAccount(data, "test_Cloud_Data", _cloud);
+                var cloudResult = uploadCloud.CloudInaryIFromAccount(data, "test_Cloud_Data", _cloud);
                 return await Task.FromResult(PayLoad<object>.Successfully(new
                 {
-                    url = uploadCloud.Link,
-                    publicId = uploadCloud.publicId
+                    url = cloudResult.Link,
+                    publicId = cloudResult.PublicId
                 }));
             }catch(Exception ex)
             {
@@ -170,20 +174,21 @@ namespace SocialNetwork.Service
             }
         }
 
-        public Task<PayLoad<object>> DeleteById(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<PayLoad<object>> FindAll(string? name, int? category = 0, int page = 1, int pageSize = 20)
+        public async Task<PayLoad<object>> FindAll(string? name, int? category = 0, PostSortBy sortBy = PostSortBy.Newest, int page = 1, int pageSize = 20)
         {
             try
             {
                 int userId = int.Parse(_user.name());
 
-                var data = _context.posts
+                var query = _context.posts
                     .AsNoTracking()
-                    .Where(x => !x.deleted).Select(x => new PostGetData
+                    .Where(x => !x.deleted);
+
+                // Lọc chỉ bài đã like (nếu sortBy = Liked)
+                if (sortBy == PostSortBy.Liked)
+                    query = query.Where(x => x.likes.Any(l => l.user_id == userId && l.isLiked == true && !l.deleted));
+
+                var data = query.Select(x => new PostGetData
                 {
                     id = x.id,
                     id_user = x.user_id,
@@ -198,39 +203,27 @@ namespace SocialNetwork.Service
                     title = x.title,
                     totalComment = x.totalComment,
                     likes = x.totalLine,
-                        //isUserLike = x.likes
-                        //                .Where(xl => xl.user_id == int.Parse(user) 
-                        //                && !x.deleted && xl.isLiked == true 
-                        //                && xl.post_id == x.id)
-                        //                .FirstOrDefault() == null ? false : true
+                    isUserLike = x.likes.Any(l => l.user_id == userId && l.isLiked == true && !x.deleted)
+                }).AsQueryable();
 
-                        // ✅ tối ưu check like
-                        isUserLike = x.likes.Any(l => l.user_id == userId && l.isLiked == true && !x.deleted)
-                    }).OrderBy(x => x.isUserLike) // Sắp xếp theo bài viết chưa like lên trước
-                    .ThenByDescending(x => x.time); // Thời gian mới nhất lên trên
-                    /*
-                        .OrderByDescending(x => x.isUserLike) // Ưu tiên bài đã like lên trước
-                        .ThenByDescending(x => x.time); // Thời gian mới nhất lên trên
-
-                        Lưu ý: 
-                            - Sắp xếp nhiều trường: OrderBy → ThenBy
-                            - Ưu tiên true: OrderByDescending
-                            - Ưu tiên false: OrderBy
-                            - Thời gian mới nhất: ThenByDescending(x => x.time)
-                     */
-
-
+                // Lọc theo tên/category
                 if (!string.IsNullOrEmpty(name))
-                    data = data.Where(x => x.title.Contains(name) || x.name.Contains(name) || x.category_name.Contains(name)).OrderByDescending(x => x.time);
+                    data = data.Where(x => x.title.Contains(name) || x.name.Contains(name) || x.category_name.Contains(name));
 
                 if (category != null && category != 0 && category.HasValue)
-                    data = data.Where(x => x.category_id == category).OrderByDescending(x => x.time);
+                    data = data.Where(x => x.category_id == category);
 
-                //data.ToList(); // Làm tất cả mọi thứ xong mới được để "ToList()" vào, vì để quá sớm sẽ làm chậm
+                // Sắp xếp theo sortBy
+                data = sortBy switch
+                {
+                    PostSortBy.Oldest => data.OrderBy(x => x.time),
+                    PostSortBy.MostLiked => data.OrderByDescending(x => x.likes).ThenByDescending(x => x.time),
+                    PostSortBy.MostCommented => data.OrderByDescending(x => x.totalComment).ThenByDescending(x => x.time),
+                    PostSortBy.Liked => data.OrderByDescending(x => x.time),
+                    _ => data.OrderByDescending(x => x.time) // Newest (mặc định)
+                };
 
-                var posts = data
-                    .ToList();   // ✅ PHẢI CÓ
-
+                var posts = data.ToList();
 
                 var postIds = posts.Select(p => p.id).ToList();
 
@@ -250,9 +243,9 @@ namespace SocialNetwork.Service
 
                 foreach (var post in posts)
                 {
-                        post.comments = commentDict.TryGetValue(post.id.Value, out var list)
-                                ? list
-                                : new List<commentItem>();
+                    post.comments = commentDict.TryGetValue(post.id.Value, out var list)
+                            ? list
+                            : new List<commentItem>();
                 }
 
                 var pageList = new PageList<object>(posts, page - 1, pageSize);
@@ -262,7 +255,8 @@ namespace SocialNetwork.Service
                     page,
                     pageList.pageSize,
                     pageList.totalCounts,
-                    pageList.totalPages
+                    pageList.totalPages,
+                    sortBy = sortBy.ToString()
                 }));
             }catch(Exception ex)
             {
@@ -280,13 +274,20 @@ namespace SocialNetwork.Service
             throw new NotImplementedException();
         }
 
-        public async Task<PayLoad<object>> FindAllPostByUser(string? name, int? category, int page = 1, int pageSize = 20)
+        public async Task<PayLoad<object>> FindAllPostByUser(string? name, int? category, PostSortBy sortBy = PostSortBy.Newest, int page = 1, int pageSize = 20)
         {
             try
             {
                 var user = _user.name();
+                int userId = int.Parse(user);
 
-                var data = _context.posts.Where(x => !x.deleted && x.user_id == int.Parse(user)).Select(x => new PostGetData
+                var query = _context.posts.Where(x => !x.deleted && x.user_id == userId);
+
+                // Lọc chỉ bài đã like (nếu sortBy = Liked)
+                if (sortBy == PostSortBy.Liked)
+                    query = query.Where(x => x.likes.Any(l => l.user_id == userId && l.isLiked == true && !l.deleted));
+
+                var data = query.Select(x => new PostGetData
                 {
                     id = x.id,
                     id_user = x.user_id,
@@ -301,27 +302,26 @@ namespace SocialNetwork.Service
                     title = x.title,
                     totalComment = x.totalComment,
                     likes = x.totalLine,
-                    isUserLike = x.likes.Any(xl => xl.user_id == int.Parse(user) && !x.deleted && xl.isLiked == true)
-                }).OrderBy(x => x.isUserLike) // Sắp xếp theo bài viết chưa like lên trước
-                    .ThenByDescending(x => x.time); // Thời gian mới nhất lên trên
-                /*
-                    .OrderByDescending(x => x.isUserLike) // Ưu tiên bài đã like lên trước
-                    .ThenByDescending(x => x.time); // Thời gian mới nhất lên trên
+                    isUserLike = x.likes.Any(xl => xl.user_id == userId && !x.deleted && xl.isLiked == true)
+                }).AsQueryable();
 
-                    Lưu ý: 
-                        - Sắp xếp nhiều trường: OrderBy → ThenBy
-                        - Ưu tiên true: OrderByDescending
-                        - Ưu tiên false: OrderBy
-                        - Thời gian mới nhất: ThenByDescending(x => x.time)
-                 */
-
+                // Lọc theo tên/category
                 if (!string.IsNullOrEmpty(name))
-                    data = data.Where(x => x.title.Contains(name) || x.name.Contains(name) || x.category_name.Contains(name)).OrderByDescending(x => x.time);
+                    data = data.Where(x => x.title.Contains(name) || x.name.Contains(name) || x.category_name.Contains(name));
 
                 if (category != null && category != 0)
-                    data = data.Where(x => x.category_id == category).OrderByDescending(x => x.time);
+                    data = data.Where(x => x.category_id == category);
 
-                //data.ToList(); // Làm tất cả mọi thứ xong mới được để "ToList()" vào, vì để quá sớm sẽ làm chậm
+                // Sắp xếp theo sortBy
+                data = sortBy switch
+                {
+                    PostSortBy.Oldest => data.OrderBy(x => x.time),
+                    PostSortBy.MostLiked => data.OrderByDescending(x => x.likes).ThenByDescending(x => x.time),
+                    PostSortBy.MostCommented => data.OrderByDescending(x => x.totalComment).ThenByDescending(x => x.time),
+                    PostSortBy.Liked => data.OrderByDescending(x => x.time),
+                    _ => data.OrderByDescending(x => x.time) // Newest (mặc định)
+                };
+
                 var posts = data.ToList();
 
                 var postIds = posts.Select(x => x.id).ToList();
@@ -432,6 +432,70 @@ namespace SocialNetwork.Service
             var dataNew = _context.likes.Where(x => x.post_id == post_id && !x.deleted && x.isLiked == true).Count();
 
             return dataNew;
+        }
+
+        public async Task<PayLoad<object>> DeleteById(int id)
+        {
+            try
+            {
+                int userId = int.Parse(_user.name());
+
+                var checkPost = _context.posts.FirstOrDefault(x => x.id == id && x.user_id == userId && !x.deleted);
+                if (checkPost == null)
+                    return await Task.FromResult(PayLoad<object>.CreatedFail(Status.DATANULL));
+
+                // Soft delete các Post_Image liên quan + xóa ảnh trên Cloudinary
+                var postImages = _context.Post_Images.Where(x => x.post_id == id && !x.deleted).ToList();
+                foreach (var pi in postImages)
+                {
+                    if (!string.IsNullOrEmpty(pi.public_id))
+                        uploadCloud.DeleteImageItemCloud(pi.public_id);
+
+                    pi.deleted = true;
+                    pi.updateat = DateTimeOffset.UtcNow;
+                }
+
+                // Soft delete các comment liên quan
+                var comments = _context.comments.Where(x => x.post_id == id && !x.deleted).ToList();
+                foreach (var c in comments)
+                {
+                    // Soft delete các commentRep liên quan
+                    var commentReps = _context.commentReps.Where(x => x.comment_Id == c.id && !x.deleted).ToList();
+                    foreach (var cr in commentReps)
+                    {
+                        cr.deleted = true;
+                        cr.updateat = DateTimeOffset.UtcNow;
+                    }
+
+                    c.deleted = true;
+                    c.updateat = DateTimeOffset.UtcNow;
+                }
+
+                // Soft delete các like liên quan
+                var likes = _context.likes.Where(x => x.post_id == id && !x.deleted).ToList();
+                foreach (var l in likes)
+                {
+                    l.deleted = true;
+                    l.updateat = DateTimeOffset.UtcNow;
+                }
+
+                // Soft delete bài đăng
+                checkPost.deleted = true;
+                checkPost.updateat = DateTimeOffset.UtcNow;
+
+                _context.posts.Update(checkPost);
+                await _context.SaveChangesAsync();
+
+                return await Task.FromResult(PayLoad<object>.Successfully(new
+                {
+                    message = "Xóa bài đăng thành công",
+                    postId = id
+                }));
+            }
+            catch (Exception ex)
+            {
+                return await Task.FromResult(PayLoad<object>.CreatedFail(ex.Message));
+            }
         }
     }
 }

@@ -20,16 +20,16 @@ namespace SocialNetwork.Controllers
 
         [HttpGet]
         [Route(nameof(FindAll))]
-        public async Task<PayLoad<object>> FindAll(string? name, int? category, int page = 1, int pageSize = 20)
+        public async Task<PayLoad<object>> FindAll(string? name, int? category, PostSortBy sortBy = PostSortBy.Newest, int page = 1, int pageSize = 20)
         {
-            return await _postService.FindAll(name, category, page, pageSize);
+            return await _postService.FindAll(name, category, sortBy, page, pageSize);
         }
 
         [HttpGet]
         [Route(nameof(FindAllPostByUser))]
-        public async Task<PayLoad<object>> FindAllPostByUser(string? name, int? category, int page = 1, int pageSize = 20)
+        public async Task<PayLoad<object>> FindAllPostByUser(string? name, int? category, PostSortBy sortBy = PostSortBy.Newest, int page = 1, int pageSize = 20)
         {
-            return await _postService.FindAllPostByUser(name, category, page, pageSize);
+            return await _postService.FindAllPostByUser(name, category, sortBy, page, pageSize);
         }
 
         [HttpPost]
@@ -58,6 +58,13 @@ namespace SocialNetwork.Controllers
         public async Task<PayLoad<object>> AddLike(int data)
         {
             return await _postService.AddLike(data);
+        }
+
+        [HttpDelete]
+        [Route(nameof(DeleteById))]
+        public async Task<PayLoad<object>> DeleteById(int id)
+        {
+            return await _postService.DeleteById(id);
         }
     }
 }

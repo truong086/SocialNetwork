@@ -25,14 +25,15 @@ namespace SocialNetwork.Service
                 if (checkAccount == null || checkPost == null)
                     return await Task.FromResult(PayLoad<object>.CreatedFail(Status.DATANULL));
 
-                _context.comments.Add(new Comment
+                var newComment = new Comment
                 {
                     post_id = checkPost.id,
                     post = checkPost,
                     user = checkAccount,
                     user_id = checkAccount.id,
                     comment = data.description
-                });
+                };
+                _context.comments.Add(newComment);
 
                 if(await _context.SaveChangesAsync() > 0)
                 {
@@ -41,10 +42,9 @@ namespace SocialNetwork.Service
                     _context.posts.Update(checkPost);
                     _context.SaveChanges();
 
-                    var dataNew = _context.comments.OrderByDescending(x => x.id).FirstOrDefault();
                     return await Task.FromResult(PayLoad<object>.Successfully(new commentItem
                     {
-                        id = dataNew.id,
+                        id = newComment.id,
                         id_post = checkPost.id,
                         image_user = checkAccount.image,
                         text = data.description,

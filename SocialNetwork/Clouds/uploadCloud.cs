@@ -7,9 +7,8 @@ namespace SocialNetwork.Clouds
     public class uploadCloud
     {
         public static Cloudinary _cloudinary;
-        public static string publicId, Link;
 
-        public static void CloudInaryAccount(string path, string id, Cloud _cloud)
+        public static CloudUploadResult CloudInaryAccount(string path, string id, Cloud _cloud)
         {
             const long MaxLeng = 10 * 1024 * 1024;
             FileInfo fileCheck = new FileInfo(path);
@@ -20,33 +19,22 @@ namespace SocialNetwork.Clouds
             var checkFile = new KiemTraDinhDangFile();
             var funcCheck = checkFile.getFileTypeString(path);
 
+            Account account = new Account(_cloud.Cloudinary_Name, _cloud.Api_Key, _cloud.Serec_Key);
+            _cloudinary = new Cloudinary(account);
+
             if (funcCheck == Status.IMAGE)
-            {
-                Account account = new Account(_cloud.Cloudinary_Name, _cloud.Api_Key, _cloud.Serec_Key);
-                _cloudinary = new Cloudinary(account);
-                UpdateImageCloud(path, id);
-            }
+                return UpdateImageCloud(path, id);
             else if (funcCheck == Status.VIDEO)
-            {
-                Account account = new Account(_cloud.Cloudinary_Name, _cloud.Api_Key, _cloud.Serec_Key);
-                _cloudinary = new Cloudinary(account);
-                UpdateVideoStringCloudIFrom(path, id);
-            }
+                return UpdateVideoStringCloudIFrom(path, id);
             else if (funcCheck == Status.AUDIO)
-            {
-                Account account = new Account(_cloud.Cloudinary_Name, _cloud.Api_Key, _cloud.Serec_Key);
-                _cloudinary = new Cloudinary(account);
-                UpdateAudioStringCloudIFrom(path, id);
-            }
+                return UpdateAudioStringCloudIFrom(path, id);
             else if (funcCheck == Status.DOCUMENT)
-            {
-                Account account = new Account(_cloud.Cloudinary_Name, _cloud.Api_Key, _cloud.Serec_Key);
-                _cloudinary = new Cloudinary(account);
-                UpdateDocumentStringCloudIFrom(path, id);
-            }
+                return UpdateDocumentStringCloudIFrom(path, id);
+
+            throw new Exception(Status.UNKNOWN);
         }
 
-        public static void CloudInaryIFromAccount(IFormFile path, string id, Cloud _cloud)
+        public static CloudUploadResult CloudInaryIFromAccount(IFormFile path, string id, Cloud _cloud)
         {
             const long MaxLeng = 10 * 1024 * 1024;
             if (path.Length > MaxLeng)
@@ -54,32 +42,23 @@ namespace SocialNetwork.Clouds
 
             var checkFile = new KiemTraDinhDangFile();
             var funcCheck = checkFile.GetFileType(path);
+
+            Account account = new Account(_cloud.Cloudinary_Name, _cloud.Api_Key, _cloud.Serec_Key);
+            _cloudinary = new Cloudinary(account);
+
             if (funcCheck == Status.IMAGE)
-            {
-                Account account = new Account(_cloud.Cloudinary_Name, _cloud.Api_Key, _cloud.Serec_Key);
-                _cloudinary = new Cloudinary(account);
-                UpdateImageCloudIFrom(path, id);
-            }
+                return UpdateImageCloudIFrom(path, id);
             else if (funcCheck == Status.VIDEO)
-            {
-                Account account = new Account(_cloud.Cloudinary_Name, _cloud.Api_Key, _cloud.Serec_Key);
-                _cloudinary = new Cloudinary(account);
-                UpdateVideoCloudIFrom(path, id);
-            }
+                return UpdateVideoCloudIFrom(path, id);
             else if (funcCheck == Status.AUDIO)
-            {
-                Account account = new Account(_cloud.Cloudinary_Name, _cloud.Api_Key, _cloud.Serec_Key);
-                _cloudinary = new Cloudinary(account);
-                UpdateAudioCloudIFrom(path, id);
-            }
+                return UpdateAudioCloudIFrom(path, id);
             else if (funcCheck == Status.DOCUMENT)
-            {
-                Account account = new Account(_cloud.Cloudinary_Name, _cloud.Api_Key, _cloud.Serec_Key);
-                _cloudinary = new Cloudinary(account);
-                UpdateDocumentCloudIFrom(path, id);
-            }
+                return UpdateDocumentCloudIFrom(path, id);
+
+            throw new Exception(Status.UNKNOWN);
         }
-        public static void UpdateImageCloud(string path, string id)
+
+        public static CloudUploadResult UpdateImageCloud(string path, string id)
         {
             var uploadPath = new ImageUploadParams()
             {
@@ -88,13 +67,14 @@ namespace SocialNetwork.Clouds
             };
 
             var uploads = _cloudinary.Upload(uploadPath);
-            publicId = uploads.PublicId.ToString();
-            Link = uploads.Uri.ToString();
-
-            //return (publicid, link); // Trả ra 2 giá trị bằng return
+            return new CloudUploadResult
+            {
+                PublicId = uploads.PublicId.ToString(),
+                Link = uploads.Uri.ToString()
+            };
         }
 
-        public static void UpdateImageCloudIFrom(IFormFile path, string id)
+        public static CloudUploadResult UpdateImageCloudIFrom(IFormFile path, string id)
         {
             var uploadPath = new ImageUploadParams()
             {
@@ -103,11 +83,14 @@ namespace SocialNetwork.Clouds
             };
 
             var uploads = _cloudinary.Upload(uploadPath);
-            publicId = uploads.PublicId.ToString();
-            Link = uploads.Uri.ToString();
+            return new CloudUploadResult
+            {
+                PublicId = uploads.PublicId.ToString(),
+                Link = uploads.Uri.ToString()
+            };
         }
-        // UP VIDEO
-        public static void UpdateVideoCloudIFrom(IFormFile path, string id)
+
+        public static CloudUploadResult UpdateVideoCloudIFrom(IFormFile path, string id)
         {
             var uploadPath = new VideoUploadParams()
             {
@@ -118,12 +101,14 @@ namespace SocialNetwork.Clouds
             };
 
             var uploads = _cloudinary.Upload(uploadPath);
-            publicId = uploads.PublicId.ToString();
-            Link = uploads.Uri.ToString();
+            return new CloudUploadResult
+            {
+                PublicId = uploads.PublicId.ToString(),
+                Link = uploads.Uri.ToString()
+            };
         }
 
-        // UP VIDEO STRING
-        public static void UpdateVideoStringCloudIFrom(string path, string id)
+        public static CloudUploadResult UpdateVideoStringCloudIFrom(string path, string id)
         {
             var uploadPath = new VideoUploadParams()
             {
@@ -134,11 +119,14 @@ namespace SocialNetwork.Clouds
             };
 
             var uploads = _cloudinary.Upload(uploadPath);
-            publicId = uploads.PublicId.ToString();
-            Link = uploads.Uri.ToString();
+            return new CloudUploadResult
+            {
+                PublicId = uploads.PublicId.ToString(),
+                Link = uploads.Uri.ToString()
+            };
         }
-        // UP AUDIO
-        public static void UpdateAudioCloudIFrom(IFormFile path, string id)
+
+        public static CloudUploadResult UpdateAudioCloudIFrom(IFormFile path, string id)
         {
             var uploadPath = new RawUploadParams()
             {
@@ -149,12 +137,14 @@ namespace SocialNetwork.Clouds
             };
 
             var uploads = _cloudinary.Upload(uploadPath);
-            publicId = uploads.PublicId.ToString();
-            Link = uploads.Uri.ToString();
+            return new CloudUploadResult
+            {
+                PublicId = uploads.PublicId.ToString(),
+                Link = uploads.Uri.ToString()
+            };
         }
 
-        // UP AUDIO STRING
-        public static void UpdateAudioStringCloudIFrom(string path, string id)
+        public static CloudUploadResult UpdateAudioStringCloudIFrom(string path, string id)
         {
             var uploadPath = new RawUploadParams()
             {
@@ -165,11 +155,14 @@ namespace SocialNetwork.Clouds
             };
 
             var uploads = _cloudinary.Upload(uploadPath);
-            publicId = uploads.PublicId.ToString();
-            Link = uploads.Uri.ToString();
+            return new CloudUploadResult
+            {
+                PublicId = uploads.PublicId.ToString(),
+                Link = uploads.Uri.ToString()
+            };
         }
-        // UP DOCUMENT
-        public static void UpdateDocumentCloudIFrom(IFormFile path, string id)
+
+        public static CloudUploadResult UpdateDocumentCloudIFrom(IFormFile path, string id)
         {
             var uploadPath = new RawUploadParams()
             {
@@ -180,12 +173,14 @@ namespace SocialNetwork.Clouds
             };
 
             var uploads = _cloudinary.Upload(uploadPath);
-            publicId = uploads.PublicId.ToString();
-            Link = uploads.Uri.ToString();
+            return new CloudUploadResult
+            {
+                PublicId = uploads.PublicId.ToString(),
+                Link = uploads.Uri.ToString()
+            };
         }
 
-        // UP DOCUMENT STRING
-        public static void UpdateDocumentStringCloudIFrom(string path, string id)
+        public static CloudUploadResult UpdateDocumentStringCloudIFrom(string path, string id)
         {
             var uploadPath = new RawUploadParams()
             {
@@ -196,8 +191,11 @@ namespace SocialNetwork.Clouds
             };
 
             var uploads = _cloudinary.Upload(uploadPath);
-            publicId = uploads.PublicId.ToString();
-            Link = uploads.Uri.ToString();
+            return new CloudUploadResult
+            {
+                PublicId = uploads.PublicId.ToString(),
+                Link = uploads.Uri.ToString()
+            };
         }
         // XÓA TOÀN BỘ ẢNH TRONG FOLDER TRONG CLOUD
         public static async void DeleteImageAllOnFoderCloud(string id, Cloud _cloud) // "id" ở đây là tên Folder trên Cloud

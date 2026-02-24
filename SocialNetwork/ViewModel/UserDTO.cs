@@ -10,6 +10,8 @@
         public string? quocgia { get; set; }
         public IFormFile? image { get; set; }
         public int? role_id { get; set; }
-
+        public string? signature_name { get; set; }
+        public string? signature_font { get; set; }
+        public int? signature_size { get; set; }
     }
 }
