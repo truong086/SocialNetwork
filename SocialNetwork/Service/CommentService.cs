@@ -1,4 +1,6 @@
-﻿using SocialNetwork.Common;
+﻿using Microsoft.AspNetCore.SignalR;
+using SocialNetwork.ChatHub;
+using SocialNetwork.Common;
 using SocialNetwork.Models;
 using SocialNetwork.ViewModel;
 
@@ -8,10 +10,12 @@ namespace SocialNetwork.Service
     {
         private readonly DBContext _context;
         private readonly IUserNameLoginService _userNameLoginService;
-        public CommentService(DBContext context, IUserNameLoginService userNameLoginService)
+        private readonly IHubContext<CommentHub> _hub;
+        public CommentService(DBContext context, IUserNameLoginService userNameLoginService, IHubContext<CommentHub> hub)
         {
             _context = context;
             _userNameLoginService = userNameLoginService;
+            _hub = hub;
 
         }
         public async Task<PayLoad<object>> AddComment(CommentDTO data)
@@ -42,6 +46,15 @@ namespace SocialNetwork.Service
                     _context.SaveChanges();
 
                     var dataNew = _context.comments.OrderByDescending(x => x.id).FirstOrDefault();
+                    await _hub.Clients
+                        .Group(checkPost.id.ToString())
+                        .SendAsync("ReceiveComment", new {
+                            id = dataNew.id,
+                            id_post = checkPost.id,
+                            image_user = checkAccount.image,
+                            text = data.description,
+                            user = checkAccount.fullname
+                        });
                     return await Task.FromResult(PayLoad<object>.Successfully(new commentItem
                     {
                         id = dataNew.id,

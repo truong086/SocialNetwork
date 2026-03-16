@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OfficeOpenXml;
+using SocialNetwork.ChatHub;
 using SocialNetwork.Clouds;
 using SocialNetwork.Models;
 using SocialNetwork.Service;
@@ -107,6 +108,7 @@ var cloudinaryAccount = new CloudinaryDotNet.Account(
     builder.Configuration["Cloud:Serec_Key"]
 );
 var cloudinary = new Cloudinary(cloudinaryAccount);
+builder.Services.AddSignalR();
 builder.Services.AddSingleton(cloudinary);
 builder.Services.Configure<Cloud>(builder.Configuration.GetSection("Cloud"));
 builder.Services.Configure<Jwt>(builder.Configuration.GetSection("Jwt"));
@@ -124,6 +126,7 @@ builder.Services.AddScoped<IUserNameLoginService, UserNameLoginService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
+builder.Services.AddScoped<IIAIService, IAIService>();
 
 var connection = builder.Configuration.GetConnectionString("MyDB");
 builder.Services.AddDbContext<DBContext>(option =>
@@ -163,4 +166,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<CommentHub>("/commentHub");
 app.Run();

@@ -235,6 +235,7 @@ namespace SocialNetwork.Service
                 var postIds = posts.Select(p => p.id).ToList();
 
                 var commentsData = _context.comments.AsNoTracking().Where(x => postIds.Contains(x.post_id))
+                    .OrderBy(x => x.cretoredat)
                     .Select(x => new commentItem
                     {
                         id = x.id,
